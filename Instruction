@@ -1,0 +1,5 @@
+docker cp <container_id>:/workspace/apps/01_blink/build/zephyr/zephyr.hex .
+
+# Flash depuis Windows
+& "C:\Program Files\STMicroelectronics\STM32Cube\STM32CubeProgrammer\bin\STM32_Programmer_CLI.exe" -c port=SWD -w zephyr.hex 0x08000000 -rst
+Option 3 — OpenOCD depuis le container
