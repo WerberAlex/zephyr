@@ -4,3 +4,10 @@ docker cp <container_id>:/workspace/apps/01_blink/build/zephyr/zephyr.hex .
 & "C:\Program Files\STMicroelectronics\STM32Cube\STM32CubeProgrammer\bin\STM32_Programmer_CLI.exe" -c port=SWD -w zephyr.hex 0x08000000 -rst
 Option 3 — OpenOCD depuis le container
 python -m serial.tools.miniterm "COM7" 115200
+
+openocd -f interface/stlink.cfg -f target/stm32u5x.cfg
+/opt/toolchains/zephyr-sdk-0.16.8/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb build/zephyr/zephyr.elf 
+
+ → mon reset halt   (stop)
+    → load             (flash)
+    → mon reset run    (go)
