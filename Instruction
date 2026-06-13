@@ -11,3 +11,5 @@ openocd -f interface/stlink.cfg -f target/stm32u5x.cfg
  → mon reset halt   (stop)
     → load             (flash)
     → mon reset run    (go)
+Exemple de commande : 
+list, next, step, finish 1 /1tw adresse, print variable, info locals, info breakpoints, continue, detach, exit
