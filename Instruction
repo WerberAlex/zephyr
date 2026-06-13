@@ -13,3 +13,4 @@ openocd -f interface/stlink.cfg -f target/stm32u5x.cfg
     → mon reset run    (go)
 Exemple de commande : 
 list, next, step, finish 1 /1tw adresse, print variable, info locals, info breakpoints, continue, detach, exit
+Plus info : https://beej.us/guide/bggdb/
