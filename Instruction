@@ -16,3 +16,11 @@ list, next, step, finish 1 /1tw adresse, print variable, info locals, info break
 Plus info : https://beej.us/guide/bggdb/
 
 Problème de lib : apt-get update && apt-get install -y gcc-multilib g++-multilib
+
+Pour utiliser target de tools 
+west build -t ... 
+
+Pour utiliser perceptio view
+gdb .exe après avoir build puis run puis 
+dump binary memory trace.bin RecorderDataPtr ((char*)RecorderDataPtr + 72796)
+pour recuper le fichier trace.bin à ouvrir avec le logiciel 
