@@ -9,3 +9,27 @@ Créer un localhost dans Visual Studio pour se connecter en ssh :
 root@localhost:2222
 ```
 Une fois connectée, rentrer le mot de passe et TADAM on est dedans. 
+
+## Flash et install 
+#Simulation 
+```
+west build -p always -b native_sim -- -DDTC_OVERLAY_FILE=boards/nativesim.overlay
+west build -t run
+
+```
+#Hardware 
+```
+west build -p always -b native_sim -- -DDTC_OVERLAY_FILE=boards/nativesim.overlay
+```
+A partir de là, plusieurs possibilités en fonction du hardware. 
+Copier le fichier .elf ou .hex en local puis lancer avec CubeProgrammer par exemple : 
+
+```
+docker cp <container_id>:/workspace/apps/09_demo_gpio_interrupt/build/zephyr/zephyr.hex .
+& "C:\Program Files\STMicroelectronics\STM32Cube\STM32CubeProgrammer\bin\STM32_Programmer_CLI.exe" -c port=SWD -w zephyr.elf 0x08000000
+```
+Soit en utilisant west avec OpenCD
+```
+west flash --runner openocd
+```
+
