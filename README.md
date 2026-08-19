@@ -49,4 +49,8 @@ Ou plus directement
 printf '...' > /dev/pts/3
 
 ```
+#Test hardware
+```
+python -m serial.tools.miniterm "<PORT>" 115200 ‎
+```
 
