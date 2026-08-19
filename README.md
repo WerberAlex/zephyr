@@ -38,4 +38,15 @@ Soit en utilisant west avec OpenCD
 ```
 west flash --runner openocd
 ```
+##Test 
+#Test simple via serial.
+Envoie de valeurs plusieurs options. Après avoir identifié "uart connected to pseudotty: /dev/pts/3" type. On peut envoyer des données soit en se connectant au pts via 
+```
+screen /dev/pts/3
+```
+Ou plus directement 
+```
+printf '...' > /dev/pts/3
+
+```
 
