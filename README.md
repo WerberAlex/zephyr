@@ -1,4 +1,11 @@
+
+
 ## Configuration
+#Création du docker 
+Création de docker à partir du docker file : 
+```
+docker build -t env-zephyr-espressif -f <Dockerfile.hardware> .  
+```
 D'abord trouver le docker file décrivant le docker. 
 Puis lancer : 
 ```
@@ -15,7 +22,6 @@ Une fois connectée, rentrer le mot de passe et TADAM on est dedans.
 ```
 west build -p always -b native_sim -- -DDTC_OVERLAY_FILE=boards/nativesim.overlay
 west build -t run
-
 ```
 #Hardware 
 ```
