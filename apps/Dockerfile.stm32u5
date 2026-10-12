@@ -1,0 +1,161 @@
+# Zephyr development image for STM32U5 targets (e.g. NUCLEO-U5A5ZJ-Q)
+
+# Settings
+ARG DEBIAN_VERSION=stable-20241016-slim
+ARG PASSWORD="zephyr"
+ARG ZEPHYR_RTOS_COMMIT=26603cefaf41298c417f2eee834ed40d9ab35d3a
+ARG ZEPHYR_SDK_VERSION=0.16.8
+ARG VS_CODE_SERVER_VERSION=4.93.1
+ARG VS_CODE_SERVER_PORT=8800
+ARG TOOLCHAIN_LIST="-t arm-zephyr-eabi"  # Toolchain ARM pour STM32U5
+ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll"
+ARG VIRTUAL_ENV=/opt/venv
+
+FROM debian:${DEBIAN_VERSION}
+
+# Redeclare arguments after FROM
+ARG PASSWORD
+ARG ZEPHYR_RTOS_COMMIT
+ARG ZEPHYR_SDK_VERSION
+ARG VS_CODE_SERVER_VERSION
+ARG VS_CODE_SERVER_PORT
+ARG TOOLCHAIN_LIST
+ARG WGET_ARGS
+ARG VIRTUAL_ENV
+ARG TARGETARCH
+
+SHELL ["/bin/bash", "-c"]
+
+# Check architecture
+RUN if [ "$TARGETARCH" = "amd64" ] || [ "$TARGETARCH" = "arm64" ]; then \
+        echo "Architecture $TARGETARCH is supported."; \
+    else \
+        echo "Unsupported architecture: $TARGETARCH"; \
+        exit 1; \
+    fi
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install base packages + STM32-specific tools
+RUN apt-get -y update && \
+    apt-get install --no-install-recommends -y \
+    dos2unix \
+    ca-certificates \
+    file \
+    locales \
+    git \
+    build-essential \
+    cmake \
+    ninja-build gperf \
+    device-tree-compiler \
+    wget \
+    curl \
+    python3 \
+    python3-pip \
+    python3-venv \
+    xz-utils \
+    vim \
+    nano \
+    mc \
+    openssh-server            
+
+# Set root password
+RUN echo "root:${PASSWORD}" | chpasswd
+
+# Set up Python virtual environment
+ENV VIRTUAL_ENV=${VIRTUAL_ENV}
+RUN python3 -m venv ${VIRTUAL_ENV}
+ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
+
+# Install west
+RUN python3 -m pip install --no-cache-dir west
+
+# Clean up
+RUN apt-get clean -y && \
+    apt-get autoremove --purge -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set up directories
+RUN mkdir -p /workspace/ && \
+    mkdir -p /opt/toolchains
+
+# SSH setup
+RUN mkdir -p /var/run/sshd && \
+    chmod 0755 /var/run/sshd
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+EXPOSE 22
+
+# Zephyr RTOS
+RUN cd /opt/toolchains && \
+    git clone https://github.com/zephyrproject-rtos/zephyr.git && \
+    cd zephyr && \
+    git checkout ${ZEPHYR_RTOS_COMMIT} && \
+    python3 -m pip install -r scripts/requirements-base.txt
+
+COPY scripts/stm32/west.yml /opt/toolchains/zephyr/west.yml
+
+# Use default manifest (includes hal_stm32)
+RUN cd /opt/toolchains && \
+    west init -l zephyr && \
+    west update --narrow -o=--depth=1
+
+# Zephyr SDK (avec toolchain ARM)
+RUN cd /opt/toolchains && \
+    wget ${WGET_ARGS} https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}/zephyr-sdk-${ZEPHYR_SDK_VERSION}_linux-${HOSTTYPE}_minimal.tar.xz && \
+    tar xf zephyr-sdk-${ZEPHYR_SDK_VERSION}_linux-${HOSTTYPE}_minimal.tar.xz && \
+    rm zephyr-sdk-${ZEPHYR_SDK_VERSION}_linux-${HOSTTYPE}_minimal.tar.xz
+
+# Install ARM toolchain
+RUN cd /opt/toolchains/zephyr-sdk-${ZEPHYR_SDK_VERSION} && \
+    bash setup.sh -c ${TOOLCHAIN_LIST}
+
+# Install host tools
+RUN cd /opt/toolchains/zephyr-sdk-${ZEPHYR_SDK_VERSION} && \
+    wget ${WGET_ARGS} https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}/hosttools_linux-${HOSTTYPE}.tar.xz && \
+    tar xf hosttools_linux-${HOSTTYPE}.tar.xz && \
+    rm hosttools_linux-${HOSTTYPE}.tar.xz && \
+    bash zephyr-sdk-${HOSTTYPE}-hosttools-standalone-*.sh -y -d .
+
+# VS Code Server (optionnel)
+ENV VS_CODE_SERVER_VERSION=${VS_CODE_SERVER_VERSION}
+ENV VS_CODE_SERVER_PORT=${VS_CODE_SERVER_PORT}
+
+RUN cd /tmp && \
+    wget ${WGET_ARGS} https://code-server.dev/install.sh && \
+    chmod +x install.sh && \
+    bash install.sh --version ${VS_CODE_SERVER_VERSION}
+
+# Install VS Code extensions (C++, CMake)
+RUN cd /tmp && \
+    if [ "$TARGETARCH" = "amd64" ]; then \
+        wget ${WGET_ARGS} https://github.com/microsoft/vscode-cpptools/releases/download/v1.22.10/cpptools-linux-x64.vsix -O cpptools.vsix; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        wget ${WGET_ARGS} https://github.com/microsoft/vscode-cpptools/releases/download/v1.22.10/cpptools-linux-arm64.vsix -O cpptools.vsix; \
+    fi && \
+    wget ${WGET_ARGS} https://github.com/microsoft/vscode-cmake-tools/releases/download/v1.19.52/cmake-tools.vsix -O cmake-tools.vsix && \
+    code-server --install-extension cpptools.vsix && \
+    code-server --install-extension cmake-tools.vsix
+
+# Clean up
+RUN cd /tmp && \
+    rm -f install.sh cpptools.vsix cmake-tools.vsix
+
+COPY scripts/zephyr.code-workspace /zephyr.code-workspace
+
+# Locale
+RUN sed -i '/^#.*en_US.UTF-8/s/^#//' /etc/locale.gen && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+
+# Thème sombre pour mc
+ENV MC_SKIN=dark
+
+# Activer l'environnement Zephyr au démarrage
+RUN echo "source ${VIRTUAL_ENV}/bin/activate" >> /root/.bashrc && \
+    echo "source /opt/toolchains/zephyr/zephyr-env.sh" >> /root/.bashrc
+
+# Entrypoint (à adapter si nécessaire)
+COPY scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh && dos2unix /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
