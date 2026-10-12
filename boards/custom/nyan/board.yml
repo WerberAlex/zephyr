@@ -1,6 +1,0 @@
-board:
-  name: nyan
-  full_name: Nyan
-  vendor: custom
-  socs:
-  - name: esp32s3
