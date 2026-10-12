@@ -1,4 +1,0 @@
-name: say_hello
-build:
-  cmake: .
-  kconfig: Kconfig
