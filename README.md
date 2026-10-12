@@ -58,5 +58,17 @@ python -m serial.tools.miniterm "<PORT>" 115200 ‎
 ```
 gdb ./build/zephyr/zephyr.exe
 ```
-Puis utiliser utiliser les commandes telles que : break main.c:33, continue, print state
+Puis utiliser utiliser les commandes telles que
+
+```
+(gdb) break /full/path/to/src/main.c:33    # Break at k_msleep (after led_state is set)
+(gdb) run
+(gdb) print led_state                       # Shows 0 or 1 (OFF or ON)
+(gdb) print led                             # Inspect LED gpio_dt_spec
+(gdb) print led.port->name                  # Shows "gpio_emul"
+(gdb) continue                              # led_state will toggle
+(gdb) print led_state                       # Now shows opposite value
+(gdb) quit
+```
+
 
