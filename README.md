@@ -56,6 +56,7 @@ python -m serial.tools.miniterm "<PORT>" 115200 ‎
 ## Debug 
 #GDB 
 ```
+west build -b native_sim . --pristine -- -DCONFIG_NO_OPTIMIZATIONS=y
 gdb ./build/zephyr/zephyr.exe
 ```
 Puis utiliser utiliser les commandes telles que
