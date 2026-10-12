@@ -53,4 +53,10 @@ printf '...' > /dev/pts/3
 ```
 python -m serial.tools.miniterm "<PORT>" 115200 ‎
 ```
+## Debug 
+#GDB 
+```
+gdb ./build/zephyr/zephyr.exe
+```
+Puis utiliser utiliser les commandes telles que : break main.c:33, continue, print state
 
